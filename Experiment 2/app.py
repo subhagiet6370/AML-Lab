@@ -1,13 +1,22 @@
+import base64
+import io
 from flask import Flask, render_template, request
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import matplotlib.pyplot as plt
-import io
-import base64
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 app = Flask(__name__)
+
+plt.style.use('dark_background')
+DARK_BG = '#0f172a'
+CARD_BG = '#1e293b'
+ACCENT_GREEN = '#10b981'
+ACCENT_BLUE = '#3b82f6'
+TEXT_COLOR = '#f8fafc'
 
 @app.route('/')
 def home():
@@ -49,7 +58,6 @@ def calculate():
             return f"Error: Invalid numerical values inside feature '{feat_name}'.", 400
         idx += 1
 
-    # Model Calculation
     data = pd.DataFrame(x_data)
     model = LinearRegression()
     model.fit(data, y_vals)
@@ -66,35 +74,49 @@ def calculate():
     equation_str = f"y = {intercept:.4f} + " + " + ".join(equation_terms)
     slopes = {x_names[i]: f"{coef:.4f}" for i, coef in enumerate(coefficients)}
 
-    plt.scatter(y_vals, predictions, color="#10b981", edgecolor="#065f46", linewidth=1, s=50, alpha=0.85)
+    fig, ax = plt.subplots(figsize=(6, 4), facecolor=CARD_BG)
+    ax.set_facecolor(DARK_BG)
+    ax.scatter(y_vals, predictions, color=ACCENT_GREEN, edgecolor="#34d399", linewidth=1, s=60, alpha=0.9)
     min_val = min(float(np.min(y_vals)), float(np.min(predictions)))
     max_val = max(float(np.max(y_vals)), float(np.max(predictions)))
-    plt.plot([min_val, max_val], [min_val, max_val], color="#64748b", linestyle="-.", linewidth=1.5)
-    plt.xlabel(f"Actual {y_name}")
-    plt.ylabel(f"Predicted {y_name}")
-    plt.title("Model Prediction Accuracy Evaluation")
-    plt.grid(True)
-    
+    ax.plot([min_val, max_val], [min_val, max_val], color="#94a3b8", linestyle="--", linewidth=1.5)
+    ax.set_xlabel(f"Actual {y_name}", color=TEXT_COLOR)
+    ax.set_ylabel(f"Predicted {y_name}", color=TEXT_COLOR)
+    ax.set_title("Model Prediction Accuracy", color=TEXT_COLOR, pad=12, fontweight='bold')
+    ax.grid(True, color="#334155", linestyle=":", alpha=0.6)
+    ax.tick_params(colors=TEXT_COLOR)
+    for spine in ax.spines.values():
+        spine.set_color('#334155')
+
     buf1 = io.BytesIO()
-    plt.savefig(buf1, format="png")
+    plt.tight_layout()
+    plt.savefig(buf1, format="png", facecolor=CARD_BG)
     buf1.seek(0)
     plot1_base64 = base64.b64encode(buf1.read()).decode("utf-8")
     plt.close()
 
+    fig, ax = plt.subplots(figsize=(6, 4), facecolor=CARD_BG)
+    ax.set_facecolor(DARK_BG)
     metrics_names = ["R2 Score", "RMSE", "MAE", "MSE"]
     metrics_vals = [r2, rmse, mae, mse]
-    colors = ["#4f46e5", "#3b82f6", "#60a5fa", "#93c5fd"]
-    bars = plt.barh(metrics_names, metrics_vals, color=colors)
+    colors = ["#6366f1", "#3b82f6", "#06b6d4", "#10b981"]
+    bars = ax.barh(metrics_names, metrics_vals, color=colors, height=0.55)
+    
     for bar in bars:
         width = bar.get_width()
-        plt.annotate(f" {width:.4f}", xy=(width, bar.get_y() + bar.get_height() / 2), ha='left', va='center', fontweight='bold')    
-    plt.xlabel("Computed Values")
-    plt.ylabel("Metric Value")
-    plt.title("Linear Regression Performance Metrics")
-    plt.grid(True)
+        ax.annotate(f" {width:.4f}", xy=(width, bar.get_y() + bar.get_height() / 2),
+                    ha='left', va='center', fontweight='bold', color=TEXT_COLOR, fontsize=9)
+                    
+    ax.set_xlabel("Computed Values", color=TEXT_COLOR)
+    ax.set_title("Regression Metrics", color=TEXT_COLOR, pad=12, fontweight='bold')
+    ax.grid(True, color="#334155", linestyle=":", alpha=0.6)
+    ax.tick_params(colors=TEXT_COLOR)
+    for spine in ax.spines.values():
+        spine.set_color('#334155')
 
     buf2 = io.BytesIO()
-    plt.savefig(buf2, format="png")
+    plt.tight_layout()
+    plt.savefig(buf2, format="png", facecolor=CARD_BG)
     buf2.seek(0)
     plot2_base64 = base64.b64encode(buf2.read()).decode("utf-8")
     plt.close()
@@ -135,7 +157,26 @@ def predict():
             sample_dict[f'x{idx+1}'] = val
 
         predicted_val = model.predict(pd.DataFrame([sample_dict]))[0]
-        return f"<h2>Predicted {y_name} (y): {predicted_val:.4f}</h2><br><a href='javascript:history.back()'>Go Back</a>"
+        return f"""
+        <html>
+        <head>
+            <style>
+                body {{ background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}
+                .card {{ background: #1e293b; padding: 2.5rem; border-radius: 12px; border: 1px solid #334155; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+                .val {{ color: #10b981; font-size: 2.2rem; margin: 1rem 0; font-weight: 700; }}
+                a {{ color: #3b82f6; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 1rem; }}
+                a:hover {{ text-decoration: underline; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h3 style="margin:0; color:#94a3b8;">Predicted {y_name} (y)</h3>
+                <div class="val">{predicted_val:.4f}</div>
+                <a href='javascript:history.back()'>← Back to Results</a>
+            </div>
+        </body>
+        </html>
+        """
     except Exception:
         return "Invalid input numbers entered for prediction.", 400
 
