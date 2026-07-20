@@ -1,43 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><title>Results</title></head>
-<body style="font-family: Arial, sans-serif; margin: 40px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regression Results</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --accent-green: #10b981;
+        }
 
-    <h2>Final Regression Equation</h2>
-    <div style="background-color: #f1f5f9; padding: 15px; font-family: monospace; font-size: 16px;">
-        {{ equation }}
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        h2, h3 { margin-top: 0; }
+
+        .equation-box {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            color: var(--accent-green);
+            word-break: break-all;
+            margin-top: 1rem;
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            background-color: var(--bg-color);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-val {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .plots-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .plots-container { grid-template-columns: 1fr; }
+        }
+
+        .img-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .img-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .input-field {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 0.25rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        a.restart-btn {
+            display: inline-block;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+
+        a.restart-btn:hover { color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <div class="card">
+        <h2>Regression Results</h2>
+        <div class="equation-box">{{ equation }}</div>
+
+        <h3 style="margin-top: 1.5rem; font-size: 1rem; color: var(--text-muted);">Coefficients Overview</h3>
+        <div class="grid-stats">
+            <div class="stat-item">
+                <div class="stat-label">Intercept (b0)</div>
+                <div class="stat-val">{{ intercept }}</div>
+            </div>
+            {% for name, slope in slopes.items() %}
+            <div class="stat-item">
+                <div class="stat-label">Slope ({{ name }})</div>
+                <div class="stat-val">{{ slope }}</div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-    
-    <h3>Intercept & Slopes</h3>
-    <p>Intercept (b0): <b>{{ intercept }}</b></p>
-    {% for name, slope in slopes.items() %}
-        <p>Slope for {{ name }}: <b>{{ slope }}</b></p>
-    {% endfor %}
 
-    <hr style="margin: 30px 0;">
+    <div class="card">
+        <h3>Make New Prediction</h3>
+        <form action="/predict" method="POST">
+            <input type="hidden" name="y_name" value="{{ y_name }}">
+            <input type="hidden" name="y_input" value="{{ y_input }}">
+            <input type="hidden" name="x_raw_str" value="{{ x_raw_str }}">
 
-    <h3>Enter Sample Data for Prediction</h3>
-    <form action="/predict" method="POST">
-        <!-- Hidden elements pass data to engine securely without complex session tracking -->
-        <input type="hidden" name="y_name" value="{{ y_name }}">
-        <input type="hidden" name="y_input" value="{{ y_input }}">
-        <input type="hidden" name="x_raw_str" value="{{ x_raw_str }}">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                {% for name in x_names %}
+                <div>
+                    <label style="font-size: 0.9rem; color: var(--text-muted);">{{ name }} (x{{ loop.index }})</label>
+                    <input type="number" step="any" class="input-field" name="pred_x_{{ loop.index0 }}" required>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn">Predict {{ y_name }}</button>
+        </form>
+    </div>
 
-        {% for name in x_names %}
-            <p>
-                <label>Value for <b>{{ name }}</b> (x{{ loop.index }}):</label><br>
-                <input type="number" step="any" name="pred_x_{{ loop.index0 }}" required style="padding: 5px;">
-            </p>
-        {% endfor %}
-        <button type="submit">Predict {{ y_name }}</button>
-    </form>
+    <div class="plots-container">
+        <div class="img-card">
+            <img src="data:image/png;base64,{{ plot1 }}" alt="Accuracy Plot">
+        </div>
+        <div class="img-card">
+            <img src="data:image/png;base64,{{ plot2 }}" alt="Metrics Plot">
+        </div>
+    </div>
 
-    <hr style="margin: 30px 0;">
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="/" class="restart-btn">← Back to Calculator</a>
+    </div>
+</div>
 
-    <h3>Visualizations</h3>
-    <img src="data:image/png;base64,{{ plot1 }}" alt="Accuracy Plot"><br><br>
-    <img src="data:image/png;base64,{{ plot2 }}" alt="Metrics Plot"><br><br>
-
-    <a href="/">Restart Calculator</a>
 </body>
 </html>
