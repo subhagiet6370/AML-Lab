@@ -2,40 +2,144 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiple Linear Regression</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .row-container { display: flex; gap: 15px; margin-bottom: 12px; align-items: center; }
-        .input-box { padding: 6px; font-size: 14px; }
-        .name-field { width: 180px; }
-        .val-field { width: 350px; }
-        .section-title { margin-top: 25px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
-        button { padding: 6px 12px; cursor: pointer; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary: #334155;
+            --secondary-hover: #475569;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .section-title {
+            margin-top: 2rem;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .row-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .tag {
+            font-weight: 600;
+            color: var(--primary);
+            width: 35px;
+            font-size: 0.9rem;
+        }
+
+        .input-box {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-box:focus {
+            border-color: var(--primary);
+        }
+
+        .name-field { width: 30%; }
+        .val-field { flex-grow: 1; }
+
+        .btn {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            font-size: 0.95rem;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 12px;
+        }
+
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--text-main);
+            margin-top: 0.5rem;
+        }
+
+        .btn-secondary:hover { background-color: var(--secondary-hover); }
     </style>
 </head>
 <body>
 
-    <h2>Multiple Linear Regression Calculator</h2>
-    
-    <form action="/calculate" method="POST">
-        <h3 class="section-title">Target Variable (y)</h3>
-        <div class="row-container">
-            <input type="text" name="y_name" class="input-box name-field" placeholder="Target Name" required>
-            <input type="text" name="y_values" class="input-box val-field" placeholder="Values" required>
-        </div>
-
-        <h3 class="section-title">Feature Variables (x)</h3>
-        <div id="features-wrapper">
-            <div class="row-container">
-                <span style="font-weight: bold; width: 30px;">x1:</span>
-                <input type="text" name="x_name_0" class="input-box name-field" placeholder="Feature Name " required>
-                <input type="text" name="x_values_0" class="input-box val-field" placeholder="Values" required>
+    <div class="container">
+        <h2>Multiple Linear Regression Calculator</h2>
+        
+        <form action="/calculate" method="POST">
+            <div class="section-title">Target Variable (y)</div>
+            <div class="row-container" style="margin-top: 12px;">
+                <input type="text" name="y_name" class="input-box name-field" placeholder="Target Name (e.g. Price)" required>
+                <input type="text" name="y_values" class="input-box val-field" placeholder="Comma separated values (e.g. 10, 20, 30)" required>
             </div>
-        </div>
 
-        <p><button type="button" onclick="addFeatureRow()">+ Add Another Feature</button></p>
-        <button type="submit" style="background-color: #2563eb; color: white; border: none; padding: 10px 20px;">Calculate</button>
-    </form>
+            <div class="section-title">Feature Variables (x)</div>
+            <div id="features-wrapper" style="margin-top: 12px;">
+                <div class="row-container">
+                    <span class="tag">x1:</span>
+                    <input type="text" name="x_name_0" class="input-box name-field" placeholder="Feature Name" required>
+                    <input type="text" name="x_values_0" class="input-box val-field" placeholder="Comma separated values" required>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="addFeatureRow()">+ Add Feature</button>
+            <button type="submit" class="btn btn-primary">Calculate Model</button>
+        </form>
+    </div>
 
     <script>
         let featureCount = 1;
@@ -44,9 +148,9 @@
             const newRow = document.createElement('div');
             newRow.className = 'row-container';
             newRow.innerHTML = `
-                <span style="font-weight: bold; width: 30px;">x${featureCount + 1}:</span>
+                <span class="tag">x${featureCount + 1}:</span>
                 <input type="text" name="x_name_${featureCount}" class="input-box name-field" placeholder="Feature Name" required>
-                <input type="text" name="x_values_${featureCount}" class="input-box val-field" placeholder="Values" required>
+                <input type="text" name="x_values_${featureCount}" class="input-box val-field" placeholder="Comma separated values" required>
             `;
             wrapper.appendChild(newRow);
             featureCount++;
